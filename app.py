@@ -11,7 +11,9 @@ from langchain.chains import ConversationalRetrievalChain
 from flask import Flask, request
 from flask_cors import CORS
 
+from bs4 import BeautifulSoup
 import sys
+import json
 
 app = Flask(__name__)
 CORS(app)
@@ -21,17 +23,24 @@ vectorstore = None
 qa = None
 
 def load_data():
-    urls = ["https://www.zhaw.ch/de/sml/studium/bachelor/betriebsoekonomie/",
-        "https://www.zhaw.ch/de/sml/studium/bachelor/betriebsoekonomie-banking-and-finance/",
-        "https://www.zhaw.ch/de/sml/studium/bachelor/betriebsoekonomie-behavioral-design/",
-        "https://www.zhaw.ch/de/sml/studium/bachelor/betriebsoekonomie-financial-management/",
-        "https://www.zhaw.ch/de/sml/studium/bachelor/betriebsoekonomie-general-management/",
-        "https://www.zhaw.ch/de/sml/studium/bachelor/betriebsoekonomie-marketing/",
-        "https://www.zhaw.ch/de/sml/studium/bachelor/betriebsoekonomie-politics-and-management/",
-        "https://www.zhaw.ch/de/sml/studium/bachelor/betriebsoekonomie-risk-and-insurance/"]
+    with open('ressources/sources.json', 'r') as config_file:
+        config = json.load(config_file)
+    # Extract the 'urls' list from the configuration
+    urls = config.get('urls', [])
     loader = WebBaseLoader(urls)
+    
     global data
     data = loader.load()
+    for doc in data:
+        # Remove the html tags from the documents
+        cleaned_text = clean_document(doc)
+    doc.page_content = cleaned_text
+
+def clean_document(document):
+    page_content = document.page_content
+    soup = BeautifulSoup(page_content, 'html.parser')
+    clean_text = ' '.join(soup.get_text().split())
+    return clean_text
 
 def vectorize_data():
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=0)
