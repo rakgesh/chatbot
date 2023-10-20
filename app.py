@@ -4,7 +4,7 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Chroma
 from langchain.memory import ConversationSummaryMemory
 from langchain.llms import OpenAI
-
+from ressources import config
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import ConversationalRetrievalChain
 
@@ -24,9 +24,9 @@ qa = None
 
 def load_data():
     with open('ressources/sources.json', 'r') as config_file:
-        config = json.load(config_file)
+        sources = json.load(config_file)
     # Extract the 'urls' list from the configuration
-    urls = config.get('urls', [])
+    urls = sources.get('urls', [])
     loader = WebBaseLoader(urls)
     
     global data
@@ -46,7 +46,7 @@ def vectorize_data():
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=0)
     all_splits = text_splitter.split_documents(data)
 
-    api_key = "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"
+    api_key = config.OPENAI_API_KEY
     openai_embeddings = OpenAIEmbeddings(openai_api_key=api_key)
     global vectorstore
     vectorstore = Chroma.from_documents(documents=all_splits, embedding=openai_embeddings)
